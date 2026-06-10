@@ -1,0 +1,41 @@
+// Brand Colors
+$color-primary: #8AA73B;
+$color-secondary: #585858;
+$color-success: #28a745;
+$color-danger: #dc3545;
+$color-warning: #ffc107;
+$color-info: #17a2b8;
+$color-light: #f8f9fa;
+$color-dark: #343a40;
+$color-white: #ffffff;
+$color-black: #000000;
+
+// Generate CSS variables (so can use in inline styles or Tailwind overrides)
+:root {
+  --color-primary: #{$color-primary};
+  --color-secondary: #{$color-secondary};
+  --color-success: #{$color-success};
+  --color-danger: #{$color-danger};
+  --color-warning: #{$color-warning};
+  --color-info: #{$color-info};
+  --color-light: #{$color-light};
+  --color-dark: #{$color-dark};
+  --color-white: #{$color-white};
+  --color-black: #{$color-black};
+
+  --header-height: 3.5rem;
+  --z-fixed: 100;
+  --width-arrow-down: 42px;
+  --height-arrow-down: 42px;
+  --base-core-value-height: 600px;
+
+  /** Font sizes */
+  --font-size-xxxl: 46px;
+  --font-size-xxl: 40px;
+  --font-size-xl: 32px;
+  --font-size-lg: 24px;
+  --font-size-md: 16px;
+  --font-size-sm: 14px;
+  --font-size-s: 12px;
+  --font-size-xs: 10px;
+}

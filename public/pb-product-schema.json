@@ -1,0 +1,37 @@
+{
+  "blocks": [
+    {
+      "id": "block-1781064447025-8qqdxeddm",
+      "type": "Banner",
+      "margin": {
+        "top": "small",
+        "bottom": "small"
+      },
+      "normalText": "Check it out",
+      "boldText": "Product",
+      "boldColor": "#6f6d6d",
+      "boldFontSize": "20"
+    },
+    {
+      "id": "block-1781064588481-8eow6dmms",
+      "type": "AppFeatureCategory",
+      "margin": {
+        "top": "small",
+        "bottom": "small"
+      },
+      "categoriesEndpoint": "/product-categories",
+      "featureEndpoint": "/products"
+    },
+    {
+      "id": "block-1781064684206-p0756prvf",
+      "type": "Footer",
+      "margin": {
+        "top": "small",
+        "bottom": "small"
+      }
+    }
+  ],
+  "settings": {
+    "layout": "default"
+  }
+}

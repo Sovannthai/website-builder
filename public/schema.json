@@ -1,0 +1,171 @@
+{
+  "layouts": [
+    {
+      "type": "header",
+      "component_key": "app_header",
+      "data": {
+        "menus": [
+          { "title": "Home", "path": "/"},
+          { "title": "News", "path": "/news", "children": [
+            { "title": "News Style 1", "path": "/news" },
+            { "title": "News Style 2", "path": "/news2" },
+            { "title": "News Style 3", "path": "/news3" }
+          ]  },
+          { "title": "About Us", "path": "/about_us" }
+        ]
+      }
+    },
+    {
+      "type": "slider",
+      "component_key": "slider",
+      "data": {
+        "slides": [
+          {
+            "title": "This is slide 1",
+            "description": "This is the description for slide 1",
+            "image": "https://cdn.pixabay.com/photo/2016/03/09/09/22/mother-1245764_1280.jpg"
+          },
+          {
+            "title": "This is slide 2",
+            "description": "This is the description for slide 2",
+            "image": "https://cdn.pixabay.com/photo/2015/12/01/20/28/forest-1072828_1280.jpg"
+          },
+          {
+            "title": "This is slide 3",
+            "description": "This is the description for slide 3",
+            "image": "https://cdn.pixabay.com/photo/2024/05/26/10/15/bird-8788491_1280.jpg"
+          }
+        ]
+      }
+    },
+    {
+      "type": "features",
+      "component_key": "features",
+      "data": {
+        "title": "Our Services",
+        "items": [
+          {
+            "image": "cat.jpeg",
+            "title": "Fast Delivery",
+            "description": "Quick and reliable service"
+          },
+          {
+            "image": "cat1.jpeg",
+            "title": "Secure",
+            "description": "Security-first architecture"
+          },
+          {
+            "image": "cat.jpeg",
+            "title": "Customizable",
+            "description": "Flexible and scalable solutions"
+          }
+        ]
+      }
+    },
+    {
+      "type": "content",
+      "component_key": "content",
+      "data": {
+        "title": "Who We Are",
+        "description": "We are a team focused on delivering high quality digital solutions.",
+        "image": "https://cdn.pixabay.com/photo/2015/01/08/18/24/children-593313_1280.jpg",
+        "image_position": "right"
+      }
+    },
+    {
+      "type": "stats",
+      "component_key": "stats",
+      "data": {
+        "title": "Our Achievements",
+        "items": [
+          { "label": "Clients", "value": 1200 },
+          { "label": "Projects", "value": 350 },
+          { "label": "Years Experience", "value": 10 }
+        ]
+      }
+    },
+    {
+      "type": "gallery",
+      "component_key": "gallery",
+      "data": {
+        "title": "Photo Gallery",
+        "images": [
+          "https://cdn.pixabay.com/photo/2017/01/20/00/30/maldives-1993704_1280.jpg",
+          "https://cdn.pixabay.com/photo/2021/01/10/12/00/road-5904909_960_720.jpg",
+          "https://cdn.pixabay.com/photo/2020/04/05/07/25/sunset-5004905_1280.jpg"
+        ]
+      }
+    },
+    {
+      "type": "testimonials",
+      "component_key": "testimonials",
+      "data": {
+        "title": "What Our Clients Say",
+        "items": [
+          {
+            "name": "John Doe",
+            "role": "CEO, ABC Corp",
+            "message": "Great service and excellent support.",
+            "avatar": "avatar.png"
+          },
+          {
+            "name": "Jane Smith",
+            "role": "Founder, XYZ Ltd",
+            "message": "Highly recommended!",
+            "avatar": "avatar.png"
+          }
+        ]
+      }
+    },
+    {
+      "type": "blog_preview",
+      "component_key": "blog_preview",
+      "data": {
+        "title": "Latest News",
+        "posts": [
+          {
+            "title": "How Technology is Changing Business",
+            "summary": "A quick look into digital transformation.",
+            "path": "/news/tech-business"
+          },
+          {
+            "title": "Why Security Matters",
+            "summary": "Best practices for modern systems.",
+            "path": "/news/security-matters"
+          }
+        ]
+      }
+    },
+    {
+      "type": "cta",
+      "component_key": "cta",
+      "data": {
+        "title": "Ready to Get Started?",
+        "description": "Contact us today to build your next project.",
+        "button": {
+          "label": "Contact Us",
+          "path": "/contact"
+        }
+      }
+    },
+    {
+      "type": "contact_form",
+      "component_key": "contact_form",
+      "data": {
+        "fields": ["name", "email", "message"],
+        "submit_label": "Send Message"
+      }
+    },
+    {
+      "type": "footer",
+      "component_key": "footer",
+      "data": {
+        "copyright": "© 2025 Your Company",
+        "links": [
+          { "title": "Privacy Policy", "path": "/privacy" },
+          { "title": "Terms of Service", "path": "/terms" }
+        ]
+      }
+    }
+  ]
+}

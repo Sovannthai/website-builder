@@ -1,0 +1,20 @@
+{
+  "layouts": [
+    {
+      "type": "about_us_banner",
+      "component_key": "banner",
+      "data": {
+        "bold": { "text": "Latest", "color": "primary-color", "fontSize": "text-xxxl" },
+        "normal": { "text": "Posts", "color": "secondary-color", "fontSize": "text-xxxl" }
+      }
+    },
+    {
+      "type": "Featured Articles",
+      "component_key": "app_feature_category",
+      "data": {
+        "categoriesEndpoint": "news_topic",
+        "featureEndpoint": "news"
+      }
+    }
+  ]
+}

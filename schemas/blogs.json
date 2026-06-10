@@ -1,0 +1,12 @@
+{
+  "slug": "blogs",
+  "sections": [
+    {
+      "type": "hero",
+      "props": {
+        "title": "BLOGS",
+        "subtitle": "Generated page"
+      }
+    }
+  ]
+}
