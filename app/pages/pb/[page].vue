@@ -14,6 +14,20 @@ const { data: pbData, error } = await useAsyncData(
 if (!pbData.value?.blocks?.length) {
   throw createError({ statusCode: 404, statusMessage: "Page not found" });
 }
+
+// The header navigation is shared across all pages: inject the canonical menu
+// into any AppHeader block so every published page shows the same menu, even if
+// this page wasn't re-saved after the menu was last edited.
+const { data: sharedMenu } = await useAsyncData("pb-menu", () =>
+  $fetch<{ menus: any[] }>("/api/menu").catch(() => null)
+);
+if (Array.isArray(sharedMenu.value?.menus) && sharedMenu.value.menus.length) {
+  for (const block of pbData.value.blocks) {
+    if (block?.type === "AppHeader") {
+      block.menus = sharedMenu.value.menus;
+    }
+  }
+}
 </script>
 
 <template>
@@ -21,6 +35,7 @@ if (!pbData.value?.blocks?.length) {
     :blocks="pbData.blocks"
     :settings="pbData.settings"
     :layout="pbData.settings?.layout || 'default'"
+    :with-layout="true"
     theme="default"
   />
   <!-- <component

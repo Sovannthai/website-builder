@@ -1,0 +1,29 @@
+{
+  "menus": [
+    {
+      "id": "11aa33a9-2382-429a-8bba-19d42e0aabba",
+      "title": "Home",
+      "path": "/pb/index"
+    },
+    {
+      "id": "1475c724-ddb4-4159-86a5-c994175d1367",
+      "title": "Products",
+      "path": "/pb/product"
+    },
+    {
+      "id": "896f07a9-f5fa-4c9e-93f8-db1561a4ee74",
+      "title": "About US",
+      "path": "/us"
+    },
+    {
+      "id": "f499f03d-1a30-4630-b20b-0adcc075126c",
+      "title": "Profile",
+      "path": "/profile"
+    },
+    {
+      "id": "90efbbde-8ef1-4fd5-a689-0e566b678234",
+      "title": "testing",
+      "path": "/test"
+    }
+  ]
+}

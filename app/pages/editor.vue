@@ -2,6 +2,24 @@
   <div class="editor-wrapper">
     <!-- Toolbar -->
     <div class="editor-toolbar">
+      <div class="editor-toolbar__pages" ref="pagesMenuRef">
+        <button class="editor-toolbar__btn editor-toolbar__btn--menu" @click="togglePagesMenu">
+          Pages ▾
+        </button>
+        <div v-if="pagesMenuOpen" class="editor-toolbar__menu">
+          <p v-if="pagesLoading" class="editor-toolbar__menu-empty">Loading…</p>
+          <p v-else-if="!pages.length" class="editor-toolbar__menu-empty">No pages yet</p>
+          <button
+            v-for="p in pages"
+            :key="p"
+            class="editor-toolbar__menu-item"
+            :class="{ active: p === pageName }"
+            @click="selectPage(p)"
+          >
+            {{ p }}
+          </button>
+        </div>
+      </div>
       <span class="editor-toolbar__page">Editing: <strong>{{ pageName }}</strong></span>
       <div class="editor-toolbar__actions">
         <span v-if="saveStatus" class="editor-toolbar__status" :class="saveStatus">{{ saveMessage }}</span>
@@ -31,8 +49,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import { WswgPageBuilder, initialiseRegistry } from "vue-wswg-editor";
+import { ref, onMounted, watch } from "vue";
+import { WswgPageBuilder, initialiseRegistry, getLayouts } from "vue-wswg-editor";
 
 definePageMeta({ layout: false });
 
@@ -50,18 +68,107 @@ const pageData = ref<Record<string, any>>({
   settings: { layout: "default" },
 });
 
-onMounted(async () => {
+const pagesMenuOpen = ref(false);
+const pagesMenuRef = ref<HTMLElement | null>(null);
+const pages = ref<string[]>([]);
+const pagesLoading = ref(false);
+
+onClickOutside(pagesMenuRef, () => closePagesMenu());
+
+function togglePagesMenu() {
+  pagesMenuOpen.value = !pagesMenuOpen.value;
+  if (pagesMenuOpen.value) loadPagesList();
+}
+
+function closePagesMenu() {
+  pagesMenuOpen.value = false;
+}
+
+async function loadPagesList() {
+  pagesLoading.value = true;
+  try {
+    const res = await $fetch<{ pages: string[] }>("/api/pages");
+    pages.value = res.pages;
+  } catch {
+    pages.value = [];
+  } finally {
+    pagesLoading.value = false;
+  }
+}
+
+function selectPage(name: string) {
+  closePagesMenu();
+  if (name === pageName.value) return;
+  navigateTo({ path: "/editor", query: { page: name } });
+}
+
+async function loadPageData() {
   // Load existing saved data for this page if available
   try {
     const existing = await $fetch<Record<string, any>>(`/pb-${pageName.value}-schema.json`);
     if (existing?.blocks) {
       pageData.value = existing;
+    } else {
+      const newPage = await $fetch<Record<string, any>>(`/pb-index-schema.json`);
+      pageData.value = {
+        blocks: [
+          newPage.blocks[0],
+          newPage.blocks[newPage.blocks.length - 1],
+        ],
+        settings: { layout: "default" },
+      };
     }
   } catch {
     // No saved data yet — start fresh
   }
+  applyLayoutSettingDefaults();
+  await applySharedMenu();
+}
 
+// The header navigation is shared across all pages. Overwrite any AppHeader
+// block's menus with the canonical shared menu so every page edits the same one.
+async function applySharedMenu() {
+  try {
+    const { menus } = await $fetch<{ menus: any[] }>("/api/menu");
+    if (!Array.isArray(menus) || menus.length === 0) return;
+    for (const block of pageData.value.blocks || []) {
+      if (block?.type === "AppHeader") {
+        block.menus = JSON.parse(JSON.stringify(menus));
+      }
+    }
+  } catch {
+    // No shared menu yet — keep the page's own menus
+  }
+}
+
+// Seed the active layout's page-setting defaults into pageData.settings so the
+// Page settings panel reflects the real defaults instead of blank fields.
+// Defaults are read from the layout's own `fields` config (single source of
+// truth) — a no-op until the registry is initialised.
+function applyLayoutSettingDefaults() {
+  const layouts = getLayouts();
+  if (!Object.keys(layouts).length) return;
+
+  if (!pageData.value.settings) pageData.value.settings = { layout: "default" };
+  const settings = pageData.value.settings;
+  const layout = layouts[settings.layout || "default"] || layouts.default;
+  const fields = layout?.fields || {};
+
+  for (const [key, config] of Object.entries<any>(fields)) {
+    if (settings[key] === undefined && config?.default !== undefined) {
+      settings[key] = config.default;
+    }
+  }
+}
+
+watch(pageName, () => {
+  loadPageData();
+});
+
+onMounted(async () => {
+  await loadPageData();
   await initialiseRegistry();
+  applyLayoutSettingDefaults();
   registryReady.value = true;
 });
 
@@ -117,6 +224,53 @@ html, body {
 .editor-toolbar__page {
   font-size: 0.85rem;
   color: #aaa;
+}
+.editor-toolbar__pages {
+  position: relative;
+}
+.editor-toolbar__btn--menu {
+  background: #374151;
+}
+.editor-toolbar__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 180px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: #2a2a3d;
+  border: 1px solid #3f3f56;
+  border-radius: 6px;
+  padding: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 200;
+}
+.editor-toolbar__menu-item {
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: #eee;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.editor-toolbar__menu-item:hover {
+  background: #3f3f56;
+}
+.editor-toolbar__menu-item.active {
+  background: #2563eb;
+  color: white;
+  font-weight: 600;
+}
+.editor-toolbar__menu-empty {
+  margin: 0;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  color: #999;
 }
 .editor-toolbar__actions {
   display: flex;

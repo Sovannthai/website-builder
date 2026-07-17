@@ -104,7 +104,7 @@ export default defineNuxtConfig({
   css: ["@mdi/font/css/materialdesignicons.css", "~/assets/main.scss"],
   app: {
     head: {
-      title: "Template Website",
+      title: "Website Builder",
       meta: [
         { charset: "utf-8" },
         { name: "viewport", content: "width=device-width, initial-scale=1" },

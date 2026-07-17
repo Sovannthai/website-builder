@@ -18,5 +18,15 @@ export default defineEventHandler(async (event) => {
 
   writeFileSync(filePath, JSON.stringify(body.data, null, 2), "utf-8");
 
+  // The header navigation is shared across every page. Persist this page's
+  // AppHeader menus to the canonical menu.json so all pages stay in sync.
+  const header = Array.isArray(body.data.blocks)
+    ? body.data.blocks.find((b: any) => b?.type === "AppHeader")
+    : undefined;
+  if (Array.isArray(header?.menus)) {
+    const menuPath = join(process.cwd(), "public", "menu.json");
+    writeFileSync(menuPath, JSON.stringify({ menus: header.menus }, null, 2), "utf-8");
+  }
+
   return { ok: true, file: `pb-${safePage}-schema.json` };
 });
