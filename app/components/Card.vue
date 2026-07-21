@@ -1,43 +1,38 @@
 <template>
   <v-card
     :image="image"
-    height="400"
+    class="app-card pa-4"
     width="auto"
-    class="pa-4"
   >
     <TitleText class="fill-height justify-end text-white" :title="title" :subtitle="subtitle"></TitleText>
   </v-card>
 </template>
+
 <script lang="ts">
-  definePageMeta({
-    layout: 'default'
-  });
-  export default {
-    name: 'Card',
-    props: {
-      title: {
-        type: String,
-        required: false,
-        default: 'Card Title'
-      },
-      subtitle: {
-        type: String,
-        required: false,
-        default: 'This is a subtitle for the card component.'
-      },
-      image: {
-        type: String,
-        required: false,
-        default: '@/assets/images/cat.jpg'
-      }
+export default {
+  name: 'Card',
+  props: {
+    title: {
+      type: String,
+      required: false,
+      default: 'Card Title'
     },
-    data() {
-      return {
-        subtitle: 'This is a subtitle for the card component.This is a subtitle for the card component.s'
-      }
+    subtitle: {
+      type: String,
+      required: false,
+      default: 'This is a subtitle for the card component.'
     },
-    methods: {
-      
+    image: {
+      type: String,
+      required: false,
+      default: '@/assets/images/cat.jpg'
     }
   }
+}
 </script>
+
+<style scoped>
+.app-card {
+  height: clamp(260px, 32vw, 400px);
+}
+</style>

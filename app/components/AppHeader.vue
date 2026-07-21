@@ -72,52 +72,86 @@
 
   </v-app-bar>
 
-  <!-- Mobile Drawer -->
-  <v-navigation-drawer
-    v-model="drawer"
-    temporary
-    location="left"
-    width="280"
-  >
-    <v-list>
-      <template v-for="menu in menus" :key="menu.path">
-        <!-- Menu with children -->
-        <v-list-group v-if="menu.children" :value="menu.path">
-          <template v-slot:activator="{ props }">
-            <v-list-item v-bind="props" :active="isActive(menu.path) || isChildActive(menu.children)">
-              <v-list-item-title>{{ menu.title }}</v-list-item-title>
-            </v-list-item>
-          </template>
-          
-          <v-list-item
-            v-for="child in menu.children"
-            :key="child.path"
-            :to="child.path"
-            @click="drawer = false"
-            :active="isActive(child.path)"
-            class="pl-8"
-          >
-            <v-list-item-title>{{ child.title }}</v-list-item-title>
-          </v-list-item>
-        </v-list-group>
+  <!-- Mobile menu: full-screen overlay with a blurred backdrop.
+       Teleported to <body> so `position: fixed` is measured against the
+       viewport — inside the app bar, its transforms would become the
+       containing block and the overlay would be mispositioned. -->
+  <Teleport to="body">
+    <Transition name="mobile-menu">
+      <div
+        v-if="drawer"
+        class="mobile-menu"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Main menu"
+        @click.self="drawer = false"
+      >
+        <button class="mobile-menu__close" aria-label="Close menu" @click="drawer = false">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
 
-        <!-- Regular menu item -->
-        <v-list-item
-          v-else
-          :to="menu.path"
-          @click="drawer = false"
-          :active="isActive(menu.path)"
-        >
-          <v-list-item-title>{{ menu.title }}</v-list-item-title>
-        </v-list-item>
-      </template>
-    </v-list>
-  </v-navigation-drawer>
+        <nav class="mobile-menu__nav">
+          <div
+            v-for="(menu, i) in menus"
+            :key="menu.path"
+            class="mobile-menu__item"
+            :style="{ '--i': i }"
+          >
+            <!-- Item with children: tap to expand -->
+            <template v-if="menu.children?.length">
+              <button
+                class="mobile-menu__link mobile-menu__link--parent"
+                :class="{ 'is-active': isActive(menu.path) || isChildActive(menu.children) }"
+                :aria-expanded="expanded === menu.path"
+                @click="toggleGroup(menu.path)"
+              >
+                {{ menu.title }}
+                <svg
+                  class="mobile-menu__chevron"
+                  :class="{ 'is-open': expanded === menu.path }"
+                  viewBox="0 0 24 24" width="18" height="18"
+                  fill="none" stroke="currentColor" stroke-width="2"
+                >
+                  <path stroke-linecap="round" d="M6 9l6 6 6-6" />
+                </svg>
+              </button>
+
+              <div v-show="expanded === menu.path" class="mobile-menu__children">
+                <RouterLink
+                  v-for="child in menu.children"
+                  :key="child.path"
+                  :to="child.path"
+                  class="mobile-menu__child"
+                  :class="{ 'is-active': isActive(child.path) }"
+                  @click="closeMenu"
+                >
+                  {{ child.title }}
+                </RouterLink>
+              </div>
+            </template>
+
+            <!-- Regular item -->
+            <RouterLink
+              v-else
+              :to="menu.path"
+              class="mobile-menu__link"
+              :class="{ 'is-active': isActive(menu.path) }"
+              @click="closeMenu"
+            >
+              {{ menu.title }}
+            </RouterLink>
+          </div>
+        </nav>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute, RouterLink } from 'vue-router'
 
 defineProps({
   menus: {
@@ -146,16 +180,44 @@ const isChildActive = (children) => {
   return children.some(child => route.path === child.path)
 }
 
+const expanded = ref(null)
+
+const toggleGroup = (path) => {
+  expanded.value = expanded.value === path ? null : path
+}
+
+const closeMenu = () => {
+  drawer.value = false
+}
+
+const handleKeydown = (e) => {
+  if (e.key === 'Escape' && drawer.value) closeMenu()
+}
+
+// Stop the page behind the overlay from scrolling while it's open.
+watch(drawer, (open) => {
+  if (typeof document === 'undefined') return
+  document.body.style.overflow = open ? 'hidden' : ''
+  if (!open) expanded.value = null
+})
+
+// Close if navigation happens some other way (back button, in-page link).
+watch(() => route.path, closeMenu)
+
 const handleScroll = () => {
   isScrolled.value = window.scrollY > 50
 }
 
 onMounted(() => {
   window.addEventListener('scroll', handleScroll)
+  window.addEventListener('keydown', handleKeydown)
   handleScroll() // Check initial state
 })
 
 onBeforeUnmount(() => {
+  // Never leave the page unscrollable if we unmount while open.
+  if (typeof document !== 'undefined') document.body.style.overflow = ''
+  window.removeEventListener('keydown', handleKeydown)
   window.removeEventListener('scroll', handleScroll)
 })
 </script>
@@ -251,5 +313,174 @@ onBeforeUnmount(() => {
 }
 :deep(.v-toolbar__content) {
   display: block !important;
+}
+</style>
+
+<!-- Unscoped: the mobile menu is teleported to <body>, so it sits outside this
+     component's DOM subtree and scoped attributes would never match it. -->
+<style>
+.mobile-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.75rem;
+  overflow-y: auto;
+  /* See-through: the page stays visible behind, with only a light blur.
+     The tint is dark rather than light because the menu can open over
+     anything — a light tint left dark text unreadable on top of imagery.
+     A dark scrim + white text stays legible whatever is behind. */
+  background: rgba(15, 18, 20, 0.42);
+  backdrop-filter: blur(6px) saturate(115%);
+  -webkit-backdrop-filter: blur(6px) saturate(115%);
+}
+
+/* Fallback for browsers without backdrop-filter: use an opaque background so
+   the menu text never sits unreadable on top of the page content. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .mobile-menu {
+    background: rgba(15, 18, 20, 0.82);
+  }
+}
+
+.mobile-menu__close {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  color: #fff;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.16);
+  border: none;
+  border-radius: 50%;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.mobile-menu__close:hover {
+  background: rgba(255, 255, 255, 0.28);
+  transform: rotate(90deg);
+}
+
+.mobile-menu__nav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  width: 100%;
+  max-width: 22rem;
+  text-align: center;
+}
+
+/* Stagger each entry in as the overlay opens */
+.mobile-menu__item {
+  opacity: 0;
+  transform: translateY(14px);
+  animation: mobile-menu-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: calc(0.06s * var(--i, 0) + 0.08s);
+}
+
+@keyframes mobile-menu-in {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.mobile-menu__link {
+  display: flex;
+  align-items: center;
+  /* Centred, with the chevron sitting beside the label rather than pushed to
+     the far edge (which would look off-centre). */
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.55rem 0;
+  font-size: clamp(1.15rem, 5vw, 1.45rem);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  color: #fff;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  background: none;
+  border: none;
+  /* Keeps the label readable even where the page behind is bright */
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.55);
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+.mobile-menu__link:hover {
+  opacity: 0.7;
+}
+.mobile-menu__link.is-active {
+  color: #b9d24e;
+}
+
+.mobile-menu__chevron {
+  flex-shrink: 0;
+  transition: transform 0.25s ease;
+}
+.mobile-menu__chevron.is-open {
+  transform: rotate(180deg);
+}
+
+/* Centred, so a left-hand indent rail would read as lopsided — a hairline
+   above the group conveys the nesting instead. */
+.mobile-menu__children {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  margin: 0.1rem auto 0.5rem;
+  padding: 0.45rem 0 0.2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+  width: 60%;
+}
+
+.mobile-menu__child {
+  padding: 0.3rem 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.82);
+  text-align: center;
+  text-decoration: none;
+  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+  transition: color 0.2s ease;
+}
+.mobile-menu__child:hover {
+  color: #fff;
+}
+.mobile-menu__child.is-active {
+  color: #b9d24e;
+  font-weight: 600;
+}
+
+/* Open / close transition for the overlay itself */
+.mobile-menu-enter-active,
+.mobile-menu-leave-active {
+  transition: opacity 0.28s ease;
+}
+.mobile-menu-enter-from,
+.mobile-menu-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-menu__item {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .mobile-menu__close:hover {
+    transform: none;
+  }
 }
 </style>

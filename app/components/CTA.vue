@@ -1,9 +1,9 @@
 <template>
   <ContainerWrapper class="py-16">
     <v-card
-      rounded="2xl"
+      rounded="xl"
       elevation="4"
-      class="pa-10 text-center"
+      class="pa-6 pa-sm-8 pa-md-10 text-center"
     >
       <h2 class="text-h5 font-weight-bold mb-3">
         {{ title }}

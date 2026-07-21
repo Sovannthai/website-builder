@@ -1,6 +1,6 @@
 <template>
   <container-wrapper class="py-12">
-    <v-card elevation="3" rounded="xl" class="pa-8">
+    <v-card elevation="3" rounded="xl" class="pa-4 pa-sm-6 pa-md-8">
       <v-form>
         <v-row>
           <v-col cols="12" md="6" v-if="fields.includes('name')">

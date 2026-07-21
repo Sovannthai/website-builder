@@ -80,6 +80,9 @@ const layoutStyle = computed(() => {
     paddingLeft: side,
     paddingRight: side,
     paddingBottom: props.footerSpacing ? "4rem" : "0",
+    // Exposed so full-bleed blocks (e.g. the full-screen Slider) can cancel this
+    // padding with a negative margin and sit flush against the page edges.
+    "--page-side-padding": side,
   };
 });
 </script>

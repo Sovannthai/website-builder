@@ -1,29 +1,24 @@
 {
   "menus": [
     {
-      "id": "11aa33a9-2382-429a-8bba-19d42e0aabba",
+      "id": "d401b179-6d0b-42f1-8f28-466194564b15",
       "title": "Home",
-      "path": "/pb/index"
+      "path": "/"
     },
     {
-      "id": "1475c724-ddb4-4159-86a5-c994175d1367",
-      "title": "Products",
-      "path": "/pb/product"
+      "id": "74a6f7b6-b5bf-4f9d-a9dd-10e2472317a7",
+      "title": "Product",
+      "path": "/product"
     },
     {
-      "id": "896f07a9-f5fa-4c9e-93f8-db1561a4ee74",
-      "title": "About US",
-      "path": "/us"
+      "id": "7547c26f-6b42-4895-b85f-d48d2ad8d229",
+      "title": "About Us",
+      "path": "/about-us"
     },
     {
-      "id": "f499f03d-1a30-4630-b20b-0adcc075126c",
-      "title": "Profile",
-      "path": "/profile"
-    },
-    {
-      "id": "90efbbde-8ef1-4fd5-a689-0e566b678234",
-      "title": "testing",
-      "path": "/test"
+      "id": "116b7f99-ed67-4e71-9eb1-ee7e5cc3cfac",
+      "title": "Other",
+      "path": "/other"
     }
   ]
 }

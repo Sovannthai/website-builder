@@ -58,7 +58,7 @@
         --font-size-md: 16px;   /* body */
         --font-size-sm: 14px;   /* small text */
         --font-size-xs: 12px;   /* captions */
-        --height-core-value: calc(var(--base-core-value-height) * 1.1.1);
+        --height-core-value: calc(var(--base-core-value-height) * 1.1);
         --height-video-section: 30%;
         --width-arrow-down: 32px;
         --height-arrow-down: 32px;
@@ -334,3 +334,36 @@ body {
 .v-application__wrap {
     height: 100%;
 }
+
+/* Page-builder block spacing override: remove the top gap that
+   vue-wswg-editor's block-margin mixin adds via
+   `padding-top: var(--block-margin-sm, 2rem)`.
+
+   The class lands on a different element in each renderer:
+     published page -> .block-wrapper > *.margin-top-sm  (PageRenderer)
+     editor canvas  -> .block-wrapper.margin-top-sm      (BlockComponent)
+   so both are covered to keep the two views consistent.
+
+   The class is doubled purely to raise specificity above the package's own
+   rules, which are injected after this file. Deliberately not !important, so
+   blocks keep their own Vuetify padding utilities (pa-2, py-12, ...) — only the
+   block-margin contribution is removed. The ::before is the editor's dashed
+   "Spacing" indicator, zeroed to match so the canvas doesn't show a gap that
+   isn't on the published page. */
+.page-renderer-wrapper .block-wrapper > *.margin-top-sm.margin-top-sm,
+.block-wrapper.margin-top-sm.margin-top-sm {
+    padding-top: 0;
+
+    /* Same treatment the package gives .margin-top-none, so no dashed remnant
+       of the indicator's borders is left behind in the canvas. */
+    &::before {
+        display: none;
+        content: none;
+    }
+}
+
+/* NOTE: ContainerWrapper's horizontal padding is deliberately left in place.
+   Its inner <v-row> carries Vuetify's -12px gutter margin, which that padding
+   compensates for — stripping it pushes content off the left edge (clipped
+   headings on mobile). Blocks that need to be full-bleed (e.g. the Slider)
+   cancel the page padding themselves via --page-side-padding instead. */

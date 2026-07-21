@@ -1,6 +1,17 @@
 <script setup lang="ts">
 import { PageRenderer } from "vue-wswg-editor";
 
+// Opt out of the site-wide Nuxt layout: it renders its own <v-app>, and the
+// page-builder layout renders one too. Nesting <v-app> breaks Vuetify's layout
+// system (v-navigation-drawer fails to hide off-canvas). The site layout already
+// hides its header/footer for /pb/* routes, so it contributes nothing here.
+definePageMeta({ layout: false });
+
+// The site layout used to supply this neutral backdrop behind the (boxed) page
+// content via its .main-content wrapper; keep it now that we opt out of it.
+// useHead scopes it to this route rather than leaking globally.
+useHead({ bodyAttrs: { style: "background-color: #f5f5f5;" } });
+
 const route = useRoute();
 console.log("Route params:", route.params);
 const pageName = computed(() => String(route.params.page));

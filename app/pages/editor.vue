@@ -22,6 +22,7 @@
       </div>
       <span class="editor-toolbar__page">Editing: <strong>{{ pageName }}</strong></span>
       <div class="editor-toolbar__actions">
+        <span v-if="imageNotice" class="editor-toolbar__status editor-toolbar__status--image">{{ imageNotice }}</span>
         <span v-if="saveStatus" class="editor-toolbar__status" :class="saveStatus">{{ saveMessage }}</span>
         <button class="editor-toolbar__btn" @click="savePage" :disabled="saving">
           {{ saving ? 'Saving…' : 'Save Page' }}
@@ -49,8 +50,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, onBeforeUnmount, watch } from "vue";
 import { WswgPageBuilder, initialiseRegistry, getLayouts } from "vue-wswg-editor";
+import { prepareImageForUpload } from "~/utils/image-resize";
 
 definePageMeta({ layout: false });
 
@@ -165,11 +167,77 @@ watch(pageName, () => {
   loadPageData();
 });
 
+// --- Image upload interception -------------------------------------------
+// The editor's image field rejects files >10MB or outside jpeg/png/gif/webp,
+// and on rejection it keeps the *previous* image — which reads as "the preview
+// didn't update". Its limits aren't configurable, so downscale/re-encode the
+// picked file here, in the capture phase, before the field's own change
+// handler ever sees it.
+const imageNotice = ref("");
+let fileChangeInterceptor: ((event: Event) => void) | null = null;
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))}KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
+}
+
+async function handleFilePicked(event: Event) {
+  const input = event.target as HTMLInputElement | null;
+  if (!input || input.tagName !== "INPUT" || input.type !== "file") return;
+  if (!input.closest(".image-upload-field")) return;
+
+  // Our own re-dispatch — let it through to the editor untouched.
+  if (input.dataset.preparedImage === "1") {
+    delete input.dataset.preparedImage;
+    return;
+  }
+
+  const file = input.files?.[0];
+  if (!file) return;
+
+  // Hold the event back until we've had a chance to shrink the file.
+  event.stopImmediatePropagation();
+  event.preventDefault();
+
+  imageNotice.value = "Processing image…";
+  let result;
+  try {
+    result = await prepareImageForUpload(file);
+  } catch {
+    result = { file, changed: false, problem: "Could not process this image." };
+  }
+
+  if (result.problem) {
+    imageNotice.value = result.problem;
+  } else if (result.changed) {
+    imageNotice.value = `Image optimised: ${formatBytes(file.size)} → ${formatBytes(result.file.size)}`;
+  } else {
+    imageNotice.value = "";
+  }
+  setTimeout(() => { imageNotice.value = ""; }, 5000);
+
+  const transfer = new DataTransfer();
+  transfer.items.add(result.file);
+  input.files = transfer.files;
+  input.dataset.preparedImage = "1";
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
 onMounted(async () => {
   await loadPageData();
   await initialiseRegistry();
   applyLayoutSettingDefaults();
   registryReady.value = true;
+
+  fileChangeInterceptor = (event: Event) => { void handleFilePicked(event); };
+  document.addEventListener("change", fileChangeInterceptor, true);
+});
+
+onBeforeUnmount(() => {
+  if (fileChangeInterceptor) {
+    document.removeEventListener("change", fileChangeInterceptor, true);
+    fileChangeInterceptor = null;
+  }
 });
 
 async function savePage() {
@@ -284,6 +352,7 @@ html, body {
 }
 .editor-toolbar__status.success { background: #166534; color: #bbf7d0; }
 .editor-toolbar__status.error   { background: #7f1d1d; color: #fecaca; }
+.editor-toolbar__status--image  { background: #1e3a8a; color: #dbeafe; }
 .editor-toolbar__btn {
   padding: 0.35rem 0.9rem;
   font-size: 0.82rem;

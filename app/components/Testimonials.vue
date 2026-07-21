@@ -15,7 +15,7 @@
           <v-row no-gutters>
             <v-col cols="auto" class="pr-4">
               <v-avatar size="56">
-                <v-img :src="`/img/${item.avatar}` || '/img/avatar.png'" />
+                <v-img :src="resolveImageSrc(item.avatar, '/img/avatar.png')" />
               </v-avatar>
             </v-col>
 
@@ -43,5 +43,7 @@
 </template>
 
 <script setup>
+import { resolveImageSrc } from '~/utils/image'
+
 defineProps({ title: String, items: Array })
 </script>

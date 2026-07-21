@@ -9,9 +9,6 @@
   </div>
 </template>
 <script lang="ts">
-  definePageMeta({
-    layout: 'default'
-  });
   export default {
     name: 'TitleText',
     props: {
