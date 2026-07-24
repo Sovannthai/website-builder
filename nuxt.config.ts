@@ -40,6 +40,15 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   ssr: false,
   runtimeConfig: {
+    // Where the page builder persists pages/menu. "filesystem" (default) writes
+    // JSON into public/ and needs a writable disk; "http" posts to a REST
+    // backend and is what serverless deploys should use.
+    // Override with NUXT_PAGE_STORAGE / NUXT_PAGE_STORAGE_URL.
+    pageStorage: process.env.NUXT_PAGE_STORAGE || "filesystem",
+    pageStorageUrl: process.env.NUXT_PAGE_STORAGE_URL || "",
+    pageStorageCollection: process.env.NUXT_PAGE_STORAGE_COLLECTION || "pages",
+    pageStorageMenuCollection: process.env.NUXT_PAGE_STORAGE_MENU_COLLECTION || "site_menu",
+    pageStorageToken: process.env.NUXT_PAGE_STORAGE_TOKEN || "",
     public: {
       baseURL: process.env.BACKEND_ADDR,
     },

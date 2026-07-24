@@ -4,7 +4,7 @@
       <template #content>
         <v-row justify="center" align="stretch" class="mt-6">
           <v-col
-            v-for="(item, index) in items"
+            v-for="(item, index) in rows"
             :key="index"
             cols="12"
             sm="6"
@@ -53,13 +53,38 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed } from 'vue'
+import { useCollection, pickWith, toFieldMap, FIELD_ALIASES } from '~/composables/useCollection'
+
+const props = defineProps({
   title: String,
-  items: {
-    type: Array,
-    required: true
-  }
+  /** Static stats saved in the page. */
+  items: { type: Array, default: () => [] },
+  /** Collection key to pull stats from instead. */
+  apiCollection: { type: String, default: '' },
+  apiLimit: { type: [String, Number], default: 6 },
+  apiSort: { type: String, default: '' },
+  /** Which API field fills each part: [{ key: 'value', value: 'count' }] */
+  apiFields: { type: Array, default: () => [] },
 })
+
+const fieldMap = computed(() => toFieldMap(props.apiFields))
+
+const { items: rows } = useCollection(
+  () => props.apiCollection,
+  {
+    fallback: () => props.items,
+    limit: () => props.apiLimit,
+    sort: () => props.apiSort,
+    map: (row) => ({
+      value: pickWith(row, fieldMap.value.value, FIELD_ALIASES.value),
+      label: pickWith(row, fieldMap.value.label, FIELD_ALIASES.title),
+      description: pickWith(row, fieldMap.value.description, FIELD_ALIASES.description),
+      suffix: pickWith(row, '', ['suffix']),
+      icon: pickWith(row, '', ['icon']),
+    }),
+  }
+)
 </script>
 
 <style scoped>

@@ -1,0 +1,24 @@
+{
+  "menus": [
+    {
+      "id": "d401b179-6d0b-42f1-8f28-466194564b15",
+      "title": "Home",
+      "path": "/"
+    },
+    {
+      "id": "74a6f7b6-b5bf-4f9d-a9dd-10e2472317a7",
+      "title": "Product",
+      "path": "/product"
+    },
+    {
+      "id": "7547c26f-6b42-4895-b85f-d48d2ad8d229",
+      "title": "About Us",
+      "path": "/about-us"
+    },
+    {
+      "id": "116b7f99-ed67-4e71-9eb1-ee7e5cc3cfac",
+      "title": "Other",
+      "path": "/other"
+    }
+  ]
+}

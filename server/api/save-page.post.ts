@@ -1,6 +1,6 @@
-import { writeFileSync } from "fs";
-import { join } from "path";
 import { defineEventHandler, readBody, createError } from "h3";
+import { usePageStorage } from "../utils/storage";
+import { DEFAULT_SITE, sanitiseSlug } from "../utils/storage/types";
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -12,21 +12,21 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: "Missing 'data' field" });
   }
 
-  // Sanitise page name to prevent path traversal
-  const safePage = body.page.replace(/[^a-z0-9_-]/gi, "_");
-  const filePath = join(process.cwd(), "public", `pb-${safePage}-schema.json`);
+  const storage = usePageStorage();
+  const site = sanitiseSlug(String(body.site ?? ""), DEFAULT_SITE);
+  const page = sanitiseSlug(body.page, "page");
 
-  writeFileSync(filePath, JSON.stringify(body.data, null, 2), "utf-8");
+  await storage.createSite(site);
+  await storage.savePage(site, page, body.data);
 
-  // The header navigation is shared across every page. Persist this page's
-  // AppHeader menus to the canonical menu.json so all pages stay in sync.
+  // The header navigation is shared across every page of a site, so persist
+  // this page's AppHeader menus as that site's canonical menu.
   const header = Array.isArray(body.data.blocks)
     ? body.data.blocks.find((b: any) => b?.type === "AppHeader")
     : undefined;
   if (Array.isArray(header?.menus)) {
-    const menuPath = join(process.cwd(), "public", "menu.json");
-    writeFileSync(menuPath, JSON.stringify({ menus: header.menus }, null, 2), "utf-8");
+    await storage.setMenu(site, header.menus);
   }
 
-  return { ok: true, file: `pb-${safePage}-schema.json` };
+  return { ok: true, site, page, storage: storage.name };
 });

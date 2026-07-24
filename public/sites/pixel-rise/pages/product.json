@@ -1,0 +1,69 @@
+{
+  "blocks": [
+    {
+      "id": "block-1784603121523-oltmr051z",
+      "type": "AppHeader",
+      "margin": {
+        "top": "small",
+        "bottom": "small"
+      },
+      "menus": [
+        {
+          "id": "d401b179-6d0b-42f1-8f28-466194564b15",
+          "title": "Home",
+          "path": "/"
+        },
+        {
+          "id": "74a6f7b6-b5bf-4f9d-a9dd-10e2472317a7",
+          "title": "Product",
+          "path": "/product"
+        },
+        {
+          "id": "7547c26f-6b42-4895-b85f-d48d2ad8d229",
+          "title": "About Us",
+          "path": "/about-us"
+        },
+        {
+          "id": "116b7f99-ed67-4e71-9eb1-ee7e5cc3cfac",
+          "title": "Other",
+          "path": "/other"
+        }
+      ]
+    },
+    {
+      "id": "block-1784709310672-sijawwuyt",
+      "type": "Banner",
+      "margin": {
+        "top": "small",
+        "bottom": "small"
+      },
+      "normalText": "Check our",
+      "boldText": "Product",
+      "boldFontSize": "",
+      "normalBodyText": "For more"
+    },
+    {
+      "id": "block-1784709259683-fx21k8wfo",
+      "type": "AppFeatureCategory",
+      "margin": {
+        "top": "small",
+        "bottom": "small"
+      }
+    },
+    {
+      "id": "block-1784623244379-mku52hbr8",
+      "type": "Footer",
+      "margin": {
+        "top": "small",
+        "bottom": "small"
+      }
+    }
+  ],
+  "settings": {
+    "layout": "default",
+    "containerWidth": "full",
+    "maxWidth": "1440",
+    "pagePadding": "small",
+    "footerSpacing": true
+  }
+}

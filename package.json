@@ -8,7 +8,9 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "generate:page": "tsx app/utils/generate-page.ts"
+    "generate:page": "tsx app/utils/generate-page.ts",
+    "export:site": "tsx scripts/export-site.ts",
+    "migrate:sites": "tsx scripts/migrate-to-sites.ts"
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",

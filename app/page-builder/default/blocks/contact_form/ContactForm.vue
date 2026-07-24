@@ -9,9 +9,9 @@ import ContactFormComponent from "~/components/ContactForm.vue";
 defineOptions({ label: "Contact Form", emoji: "✉️" });
 
 const props = defineProps<{
-  form_fields: Array<{ name: string }>;
+  form_fields?: Array<{ name: string }>;
   submit_label: string;
 }>();
 
-const fieldNames = computed(() => props.form_fields.map((f) => f.name));
+const fieldNames = computed(() => (props.form_fields ?? []).map((f) => f?.name).filter(Boolean));
 </script>

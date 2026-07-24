@@ -1,5 +1,11 @@
 <template>
-  <AppHeaderComponent :menus="menus" />
+  <AppHeaderComponent
+    :menus="menus"
+    :api-collection="apiCollection"
+    :api-limit="apiLimit"
+    :api-sort="apiSort"
+    :api-fields="apiFields"
+  />
 </template>
 
 <script setup lang="ts">
@@ -8,6 +14,10 @@
   defineOptions({ label: "App Header", emoji: "🔝" });
 
   defineProps<{
+  apiCollection?: string;
+  apiLimit?: string;
+  apiSort?: string;
+  apiFields?: Array<{ key?: string; value?: string }>;
   menus: Array<{
     title: string;
     path: string;

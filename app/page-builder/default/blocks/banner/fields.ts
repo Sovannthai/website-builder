@@ -12,6 +12,11 @@ export default {
     ],
     { label: "Show Image", default: "false" }
   ),
+  image: createField.image({
+    label: "Side Image",
+    description: "Shown when Show Image is Yes; blank uses the stock image",
+    conditions: (data) => data.showImg === "true" || data.showImg === true,
+  }),
   boldText: createField.text({ label: "Bold Heading Text", default: "" }),
   boldColor: createField.color({ label: "Bold Text Color", default: "#000000" }),
   boldFontSize: createField.text({ label: "Bold Font Size", default: "2rem" }),

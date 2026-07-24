@@ -1,15 +1,9 @@
-import { readdirSync } from "fs";
-import { join } from "path";
-import { defineEventHandler } from "h3";
+import { defineEventHandler, getQuery } from "h3";
+import { usePageStorage } from "../utils/storage";
+import { DEFAULT_SITE, sanitiseSlug } from "../utils/storage/types";
 
-export default defineEventHandler(() => {
-  const publicDir = join(process.cwd(), "public");
-  const files = readdirSync(publicDir);
-
-  const pages = files
-    .filter((f) => /^pb-.+-schema\.json$/.test(f))
-    .map((f) => f.replace(/^pb-/, "").replace(/-schema\.json$/, ""))
-    .sort();
-
-  return { pages };
+export default defineEventHandler(async (event) => {
+  const site = sanitiseSlug(String(getQuery(event).site ?? ""), DEFAULT_SITE);
+  const pages = await usePageStorage().listPages(site);
+  return { site, pages };
 });

@@ -2,6 +2,29 @@
   <div class="editor-wrapper">
     <!-- Toolbar -->
     <div class="editor-toolbar">
+      <!-- Websites (projects) -->
+      <div class="editor-toolbar__pages" ref="sitesMenuRef">
+        <button class="editor-toolbar__btn editor-toolbar__btn--menu" @click="toggleSitesMenu">
+          🌐 {{ siteName }} ▾
+        </button>
+        <div v-if="sitesMenuOpen" class="editor-toolbar__menu">
+          <p v-if="sitesLoading" class="editor-toolbar__menu-empty">Loading…</p>
+          <button
+            v-for="s in sites"
+            :key="s"
+            class="editor-toolbar__menu-item"
+            :class="{ active: s === siteName }"
+            @click="selectSite(s)"
+          >
+            {{ s }}
+          </button>
+          <button class="editor-toolbar__menu-item editor-toolbar__menu-item--new" @click="createSite">
+            + New website
+          </button>
+        </div>
+      </div>
+
+      <!-- Pages within the current website -->
       <div class="editor-toolbar__pages" ref="pagesMenuRef">
         <button class="editor-toolbar__btn editor-toolbar__btn--menu" @click="togglePagesMenu">
           Pages ▾
@@ -18,8 +41,12 @@
           >
             {{ p }}
           </button>
+          <button class="editor-toolbar__menu-item editor-toolbar__menu-item--new" @click="createPage">
+            + New page
+          </button>
         </div>
       </div>
+
       <span class="editor-toolbar__page">Editing: <strong>{{ pageName }}</strong></span>
       <div class="editor-toolbar__actions">
         <span v-if="imageNotice" class="editor-toolbar__status editor-toolbar__status--image">{{ imageNotice }}</span>
@@ -27,7 +54,7 @@
         <button class="editor-toolbar__btn" @click="savePage" :disabled="saving">
           {{ saving ? 'Saving…' : 'Save Page' }}
         </button>
-        <a class="editor-toolbar__btn editor-toolbar__btn--preview" :href="`/pb/${pageName}`" target="_blank">
+        <a class="editor-toolbar__btn editor-toolbar__btn--preview" :href="`/pb/${siteName}/${pageName}`" target="_blank">
           Preview ↗
         </a>
       </div>
@@ -57,7 +84,12 @@ import { prepareImageForUpload } from "~/utils/image-resize";
 definePageMeta({ layout: false });
 
 const route = useRoute();
-console.log("Route paramsss:", route.query);
+
+// The builder hosts several websites; each is a "site" (project) folder with
+// its own pages and shared menu. Both are driven by the URL:
+//   /editor?site=<project>&page=<page>
+const DEFAULT_SITE = "default";
+const siteName = computed(() => String(route.query.site || DEFAULT_SITE));
 const pageName = computed(() => String(route.query.page || "index"));
 
 const registryReady = ref(false);
@@ -75,7 +107,13 @@ const pagesMenuRef = ref<HTMLElement | null>(null);
 const pages = ref<string[]>([]);
 const pagesLoading = ref(false);
 
+const sitesMenuOpen = ref(false);
+const sitesMenuRef = ref<HTMLElement | null>(null);
+const sites = ref<string[]>([]);
+const sitesLoading = ref(false);
+
 onClickOutside(pagesMenuRef, () => closePagesMenu());
+onClickOutside(sitesMenuRef, () => (sitesMenuOpen.value = false));
 
 function togglePagesMenu() {
   pagesMenuOpen.value = !pagesMenuOpen.value;
@@ -86,10 +124,17 @@ function closePagesMenu() {
   pagesMenuOpen.value = false;
 }
 
+function toggleSitesMenu() {
+  sitesMenuOpen.value = !sitesMenuOpen.value;
+  if (sitesMenuOpen.value) loadSitesList();
+}
+
 async function loadPagesList() {
   pagesLoading.value = true;
   try {
-    const res = await $fetch<{ pages: string[] }>("/api/pages");
+    const res = await $fetch<{ pages: string[] }>("/api/pages", {
+      query: { site: siteName.value },
+    });
     pages.value = res.pages;
   } catch {
     pages.value = [];
@@ -98,40 +143,101 @@ async function loadPagesList() {
   }
 }
 
+async function loadSitesList() {
+  sitesLoading.value = true;
+  try {
+    const res = await $fetch<{ sites: string[] }>("/api/sites");
+    sites.value = res.sites;
+  } catch {
+    sites.value = [];
+  } finally {
+    sitesLoading.value = false;
+  }
+}
+
 function selectPage(name: string) {
   closePagesMenu();
   if (name === pageName.value) return;
-  navigateTo({ path: "/editor", query: { page: name } });
+  navigateTo({ path: "/editor", query: { site: siteName.value, page: name } });
 }
 
-async function loadPageData() {
-  // Load existing saved data for this page if available
+function selectSite(name: string) {
+  sitesMenuOpen.value = false;
+  if (name === siteName.value) return;
+  // Switching websites starts on that site's home page.
+  navigateTo({ path: "/editor", query: { site: name, page: "index" } });
+}
+
+async function createSite() {
+  sitesMenuOpen.value = false;
+  const name = window.prompt("Name for the new website (letters, numbers, - and _):");
+  if (!name?.trim()) return;
   try {
-    const existing = await $fetch<Record<string, any>>(`/pb-${pageName.value}-schema.json`);
+    const res = await $fetch<{ site: string }>("/api/create-site", {
+      method: "POST",
+      body: { site: name.trim() },
+    });
+    await loadSitesList();
+    navigateTo({ path: "/editor", query: { site: res.site, page: "index" } });
+  } catch {
+    window.alert("Could not create that website.");
+  }
+}
+
+function createPage() {
+  closePagesMenu();
+  const name = window.prompt("Name for the new page (letters, numbers, - and _):");
+  if (!name?.trim()) return;
+  const slug = name.trim().replace(/[^a-z0-9_-]/gi, "-").toLowerCase();
+  navigateTo({ path: "/editor", query: { site: siteName.value, page: slug } });
+}
+
+/** Static path of a page's saved JSON: public/sites/<site>/pages/<page>.json */
+const pageJsonUrl = (site: string, page: string) => `/sites/${site}/pages/${page}.json`;
+
+async function loadPageData() {
+  pageData.value = { blocks: [], settings: { layout: "default" } };
+
+  try {
+    const existing = await $fetch<Record<string, any>>(pageJsonUrl(siteName.value, pageName.value));
     if (existing?.blocks) {
       pageData.value = existing;
     } else {
-      const newPage = await $fetch<Record<string, any>>(`/pb-index-schema.json`);
-      pageData.value = {
-        blocks: [
-          newPage.blocks[0],
-          newPage.blocks[newPage.blocks.length - 1],
-        ],
-        settings: { layout: "default" },
-      };
+      await seedFromHomePage();
     }
   } catch {
-    // No saved data yet — start fresh
+    // Page doesn't exist yet — seed a new one from this site's home page so it
+    // starts with the shared header/footer instead of a blank canvas.
+    await seedFromHomePage();
   }
   applyLayoutSettingDefaults();
   await applySharedMenu();
+}
+
+async function seedFromHomePage() {
+  if (pageName.value === "index") return; // nothing to seed from
+  try {
+    const home = await $fetch<Record<string, any>>(pageJsonUrl(siteName.value, "index"));
+    const blocks = home?.blocks ?? [];
+    if (!blocks.length) return;
+    const header = blocks.find((b: any) => b?.type === "AppHeader");
+    const footer = blocks.find((b: any) => b?.type === "Footer");
+    pageData.value = {
+      blocks: JSON.parse(JSON.stringify([header, footer].filter(Boolean))),
+      settings: { ...(home.settings ?? { layout: "default" }) },
+    };
+  } catch {
+    // No home page yet — leave the canvas empty
+  }
 }
 
 // The header navigation is shared across all pages. Overwrite any AppHeader
 // block's menus with the canonical shared menu so every page edits the same one.
 async function applySharedMenu() {
   try {
-    const { menus } = await $fetch<{ menus: any[] }>("/api/menu");
+    const { menus } = await $fetch<{ menus: any[] }>("/api/menu", {
+      query: { site: siteName.value },
+    });
     if (!Array.isArray(menus) || menus.length === 0) return;
     for (const block of pageData.value.blocks || []) {
       if (block?.type === "AppHeader") {
@@ -163,7 +269,8 @@ function applyLayoutSettingDefaults() {
   }
 }
 
-watch(pageName, () => {
+// Reload when either the page or the website changes.
+watch([pageName, siteName], () => {
   loadPageData();
 });
 
@@ -246,7 +353,7 @@ async function savePage() {
   try {
     await $fetch("/api/save-page", {
       method: "POST",
-      body: { page: pageName.value, data: pageData.value },
+      body: { site: siteName.value, page: pageName.value, data: pageData.value },
     });
     saveStatus.value = "success";
     saveMessage.value = "Saved!";

@@ -1,5 +1,5 @@
 <template>
-  <div v-if="slides?.length" class="slider">
+  <div v-if="slideItems?.length" class="slider">
     <Swiper
       class="slider__swiper"
       :modules="modules"
@@ -14,7 +14,7 @@
       :keyboard="{ enabled: true }"
       :a11y="{ enabled: true }"
     >
-      <SwiperSlide v-for="(slide, i) in slides" :key="i" class="slider__slide">
+      <SwiperSlide v-for="(slide, i) in slideItems" :key="i" class="slider__slide">
         <!-- Background image as a layer so it can slowly zoom (Ken Burns) -->
         <div
           class="slider__image"
@@ -51,6 +51,7 @@ import { computed } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay, EffectFade, Navigation, Pagination, Keyboard, A11y } from 'swiper/modules'
 import { resolveImageSrc } from '~/utils/image'
+import { useCollection, pickWith, toFieldMap, FIELD_ALIASES } from '~/composables/useCollection'
 
 import 'swiper/css'
 import 'swiper/css/effect-fade'
@@ -58,16 +59,36 @@ import 'swiper/css/pagination'
 import 'swiper/css/navigation'
 
 const props = defineProps({
-  slides: {
-    type: Array,
-    required: true
-  }
+  /** Static slides saved in the page. */
+  slides: { type: Array, default: () => [] },
+  /** Collection key to pull slides from instead, e.g. "banners". */
+  apiCollection: { type: String, default: '' },
+  apiLimit: { type: [String, Number], default: 5 },
+  apiSort: { type: String, default: '' },
+  /** Which API field fills each part: [{ key: 'title', value: 'headline' }] */
+  apiFields: { type: Array, default: () => [] },
 })
 
 const modules = [Autoplay, EffectFade, Navigation, Pagination, Keyboard, A11y]
 
+const fieldMap = computed(() => toFieldMap(props.apiFields))
+
+const { items: slideItems } = useCollection(
+  () => props.apiCollection,
+  {
+    fallback: () => props.slides,
+    limit: () => props.apiLimit,
+    sort: () => props.apiSort,
+    map: (row) => ({
+      title: pickWith(row, fieldMap.value.title, FIELD_ALIASES.title, ''),
+      description: pickWith(row, fieldMap.value.description, FIELD_ALIASES.description, ''),
+      image: pickWith(row, fieldMap.value.image, FIELD_ALIASES.image, ''),
+    }),
+  }
+)
+
 // Looping/autoplay/controls only make sense with more than one slide.
-const hasMultiple = computed(() => (props.slides?.length ?? 0) > 1)
+const hasMultiple = computed(() => (slideItems.value?.length ?? 0) > 1)
 </script>
 
 <style scoped>

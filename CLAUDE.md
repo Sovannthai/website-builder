@@ -26,8 +26,28 @@ This is a Nuxt 4 + Vuetify site whose pages are assembled from JSON-described bl
 
 - `app/pages/editor.vue` mounts `WswgPageBuilder` (from `vue-wswg-editor`) with `theme="default"`. It loads `GET /pb-<page>-schema.json` (a static file under `public/`) for the page's current content, or falls back to seeding from `pb-index-schema.json`'s first/last block.
 - Saving posts to `server/api/save-page.post.ts`, which sanitises the page name and writes `public/pb-<page>-schema.json` directly to disk (`writeFileSync`) — there is no database involved.
-- `server/api/pages.get.ts` lists all `pb-*-schema.json` files in `public/` (strips the `pb-`/`-schema.json` wrapper) and backs the "Pages" menu in the editor toolbar, letting you switch which page you're editing without leaving `/editor`.
-- **Shared header menu:** the `AppHeader` block's nav is shared across every page via a single `public/menu.json` (read by `server/api/menu.get.ts`). `save-page.post.ts` writes the saved page's `AppHeader` menus to `menu.json`, and both `editor.vue` (on load) and `pb/[page].vue` (on render) inject that canonical menu into any `AppHeader` block — so editing the menu on one page updates it everywhere. Each page schema still stores a `menus` copy on its `AppHeader` block, but it's vestigial: the injected shared menu always overrides it (guarded to skip injection when `menu.json` is empty).
+### Multi-site content layout
+
+The builder hosts **several websites**, each a "site" (project) folder:
+
+```
+public/sites/<site>/
+  menu.json          # shared header nav for that site
+  pages/<page>.json  # one file per page
+```
+
+Everything is addressed by `(site, page)`. The editor is `/editor?site=<site>&page=<page>` and the preview is `/pb/<site>/<page>` (`app/pages/pb/[site]/[page].vue`). The toolbar has a 🌐 site switcher (with "+ New website") alongside the Pages menu.
+
+Reads are plain static fetches of `/sites/<site>/pages/<page>.json` — writes go through the API. `server/utils/storage/` holds a swappable `PageStorage` adapter (`filesystem` by default, `http` for serverless; pick with `NUXT_PAGE_STORAGE`), which backs `server/api/{sites,pages,menu,save-page,create-site}`. Note the front-end reads bypass that adapter, so a non-filesystem driver needs those reads routed through the API too.
+
+`scripts/migrate-to-sites.ts` (`pnpm migrate:sites <name>`) converts the old flat `public/pb-<page>-schema.json` + `public/menu.json` layout into a site folder; it copies rather than moves, so the originals remain until deleted.
+
+- `server/api/pages.get.ts` lists a site's pages and backs the "Pages" menu in the editor toolbar.
+- **Shared header menu:** the `AppHeader` block's nav is shared across every page of a site via `public/sites/<site>/menu.json` (read by `server/api/menu.get.ts`). `save-page.post.ts` writes the saved page's `AppHeader` menus there, and both `editor.vue` (on load) and `pb/[site]/[page].vue` (on render) inject that canonical menu into any `AppHeader` block — so editing the menu on one page updates it everywhere in that site. Each page still stores a `menus` copy on its `AppHeader` block, but it's vestigial: the injected shared menu always overrides it (guarded to skip injection when the menu is empty).
+
+### Exporting a site
+
+`pnpm export:site <site> [outDir]` (`scripts/export-site.ts` + `scripts/export/manifest.ts`) turns a site into a **standalone Nuxt project**: real `.vue` pages with direct component usage, base64 images extracted to `public/img/`, only the components actually used (resolved transitively, since Nuxt auto-imports mean usage is often only a template tag), a shared `siteMenu` util, and per-page layouts when page settings differ. The output has no `vue-wswg-editor` dependency. `manifest.ts` maps each block type to its component and props — keep it in sync when block wrappers change.
 - `app/pages/pb/[page].vue` renders a saved page publicly via `PageRenderer` (also from `vue-wswg-editor`), 404ing if no schema file exists for that slug.
 
 ### Page-builder themes (`app/page-builder/`)

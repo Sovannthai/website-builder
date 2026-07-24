@@ -17,7 +17,7 @@
       </div>
       <!-- Desktop Navigation -->
       <div class="nav-wrapper d-none d-md-flex">
-        <template v-for="menu in menus" :key="menu.path">
+        <template v-for="menu in menuItems" :key="menu.path">
           <!-- Menu with children (dropdown) -->
           <v-menu v-if="menu.children" offset-y transition="slide-y-transition">
             <template v-slot:activator="{ props }">
@@ -94,7 +94,7 @@
 
         <nav class="mobile-menu__nav">
           <div
-            v-for="(menu, i) in menus"
+            v-for="(menu, i) in menuItems"
             :key="menu.path"
             class="mobile-menu__item"
             :style="{ '--i': i }"
@@ -150,13 +150,14 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
+import { useCollection, pickWith, toFieldMap, FIELD_ALIASES } from '~/composables/useCollection'
 
-defineProps({
+const props = defineProps({
+  /** Menu saved in the page / injected from the site's shared menu. */
   menus: {
     type: Array,
-    required: true,
     default: () => [
       { title: 'Home', path: '/' },
       { title: 'News', path: '/news', children: [
@@ -166,8 +167,40 @@ defineProps({
       ]  },
       { title: 'About Us', path: '/about_us' }
     ]
-  }
+  },
+  /** Collection key to build the nav from instead, e.g. "navigation". */
+  apiCollection: { type: String, default: '' },
+  apiLimit: { type: [String, Number], default: 20 },
+  apiSort: { type: String, default: '' },
+  /** Which API field fills each part: [{ key: 'title', value: 'label' }] */
+  apiFields: { type: Array, default: () => [] },
 })
+
+const fieldMap = computed(() => toFieldMap(props.apiFields))
+
+// Build one nav entry, recursing into sub-items when the backend nests them.
+const toMenuItem = (row) => {
+  const childrenKey = fieldMap.value.children
+  const childrenRaw =
+    (childrenKey && row?.[childrenKey]) ??
+    row?.children ?? row?.items ?? row?.submenu
+  const children = Array.isArray(childrenRaw) ? childrenRaw.map(toMenuItem) : undefined
+  return {
+    title: pickWith(row, fieldMap.value.title, FIELD_ALIASES.title, 'Untitled'),
+    path: pickWith(row, fieldMap.value.path, FIELD_ALIASES.path, '/'),
+    ...(children?.length ? { children } : {}),
+  }
+}
+
+const { items: menuItems } = useCollection(
+  () => props.apiCollection,
+  {
+    fallback: () => props.menus,
+    limit: () => props.apiLimit,
+    sort: () => props.apiSort,
+    map: toMenuItem,
+  }
+)
 
 const drawer = ref(false)
 const route = useRoute()

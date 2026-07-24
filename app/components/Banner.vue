@@ -1,21 +1,32 @@
 <template>
-  <ContainerWrapper :height="$vuetify.display.smAndDown ? '200px' : '300px'" class="d-flex align-center"
-    :class="{ 'bg-img-right': showImg && !$vuetify.display.xs }" style="border-bottom: 1px solid #EBEBEB;">
+  <ContainerWrapper
+    :height="$vuetify.display.smAndDown ? '200px' : '300px'"
+    class="d-flex align-center"
+    :style="bannerStyle"
+  >
+    <div
+      v-if="hasSideImage && !$vuetify.display.xs"
+      class="banner-side-image"
+      :style="{ backgroundImage: `url(${sideImage})` }"
+    ></div>
     <div class="products-bg-gradient"></div>
     <div class="products-header-content">
-      <v-card-subtitle class="text-lg text-uppercase pl-0" v-if="!showImg">{{ normalText }}</v-card-subtitle>
-      <bold-text v-if="!showImg" :bold="bold" :normal="normal" />
+      <v-card-subtitle v-if="normalText" class="text-lg text-uppercase pl-0">{{ normalText }}</v-card-subtitle>
+      <bold-text :bold="bold" :normal="normal" />
       <slot name="content"></slot>
     </div>
   </ContainerWrapper>
 </template>
 <script lang="ts">
 import { defineComponent } from 'vue';
+import { resolveImageSrc } from '~/utils/image';
+
 interface TextStyle {
   text: string;
   color: string;
   fontSize: string;
 }
+
 export default defineComponent({
   name: 'Banner',
   props: {
@@ -26,6 +37,11 @@ export default defineComponent({
     showImg: {
       type: Boolean,
       default: false
+    },
+    /** Side image shown when `showImg` is on. Falls back to the stock image. */
+    image: {
+      type: String,
+      default: ''
     },
     bold: {
       type: Object as () => TextStyle,
@@ -38,8 +54,22 @@ export default defineComponent({
       default: () => ({ text: '', color: '', fontSize: '' })
     }
   },
-  data() {
-    return {};
+  computed: {
+    /** The side image, once resolved to a usable src. */
+    sideImage(): string {
+      return resolveImageSrc(this.image);
+    },
+    /**
+     * Only draw the image layer when there's actually an image to draw.
+     * Previously this fell back to a stock file that isn't in the repo, so the
+     * layer rendered blank (and, with SSR off, the 404 quietly returned HTML).
+     */
+    hasSideImage(): boolean {
+      return this.showImg && !!this.sideImage;
+    },
+    bannerStyle(): Record<string, string> {
+      return { borderBottom: '1px solid #EBEBEB' };
+    }
   }
 });
 </script>
@@ -56,38 +86,25 @@ export default defineComponent({
 
 .products-header-content {
   position: relative;
-  z-index: 1;
+  /* Above the side image, so the text stays readable when they overlap */
+  z-index: 2;
 }
 
-.bg-img {
-  background-image: url('/img/aboutUs-min.png') !important;
-  background-size: contain !important;
-  background-repeat: no-repeat !important;
-  background-position: left !important;
-  /* Flip the right image horizontally */
-}
-
-.bg-img-right {
-  /* Flip the right-side image horizontally */
-  background-position-x: 15% !important;
-  background-size: contain !important;
-  background-repeat: no-repeat !important;
-  /* Use transform for the right image using a pseudo-element */
-  position: relative;
-}
-
-.bg-img-right::after {
-  content: '';
+/* The image fills the right half with the text beside it. A real element
+   rather than ::after: percentage/inset sizing on the pseudo-element didn't
+   resolve against Vuetify's card, so it collapsed to ~32px tall. */
+.banner-side-image {
   position: absolute;
   top: 0;
+  bottom: 0;
   right: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url('/img/aboutUs-min.png');
-  background-size: contain;
+  width: 45%;
+  background-size: cover;
   background-repeat: no-repeat;
-  background-position-x: 15%;
-  transform: scaleX(-1);
+  background-position: center;
+  /* Fade into the banner rather than ending on a hard edge */
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 22%);
+  mask-image: linear-gradient(to right, transparent, #000 22%);
   z-index: 1;
   pointer-events: none;
 }
